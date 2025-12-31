@@ -31,6 +31,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const stickers = ["🐸", "😐", "😭", "🗿", "🫵", "🔥", "🤡", "💅"];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -56,6 +58,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
 
         <div className="p-6 overflow-y-auto space-y-6">
           
+          {/* Sticker Selection */}
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Stiker Mini</label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => onUpdate({ sticker: null })}
+                className={`w-10 h-10 rounded-lg flex items-center justify-center border text-sm transition-all ${
+                  settings.sticker === null
+                    ? 'border-red-500 bg-red-50 text-red-500 font-bold' 
+                    : 'border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                🚫
+              </button>
+              {stickers.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => onUpdate({ sticker: s })}
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center border text-xl transition-all ${
+                    settings.sticker === s 
+                      ? 'border-black bg-black text-white ring-2 ring-black ring-offset-2' 
+                      : 'border-gray-200 hover:border-gray-400 bg-white'
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <hr className="border-gray-100" />
+
           {/* Font Selection */}
           <div className="space-y-3">
             <label className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Jenis Font</label>
@@ -67,6 +101,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
                 { name: 'Mono', value: 'Space Mono' },
                 { name: 'Comic', value: 'Comic Sans MS' },
                 { name: 'Impact', value: 'Impact' },
+                { name: 'Poppins', value: 'Poppins' },
+                { name: 'C. Neue', value: 'Comic Neue' },
               ].map((font) => (
                 <button
                   key={font.value}

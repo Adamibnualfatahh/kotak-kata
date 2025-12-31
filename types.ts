@@ -13,6 +13,14 @@ export interface MemeCanvasProps {
   backgroundColor?: string;
   textColor?: string;
   backgroundImage?: string | null; // Data URL or Object URL
+  
+  // V2 Features
+  isWeirdMode?: boolean;
+  weirdnessLevel?: number; // 1-5
+  randomSeed?: number; // To trigger re-randomization
+  isSeriousMode?: boolean;
+  sticker?: string | null;
+  blurLevel?: number; // New blur feature
 }
 
 export interface AppSettings {
@@ -20,4 +28,5 @@ export interface AppSettings {
   backgroundColor: string;
   textColor: string;
   backgroundImage: string | null;
+  sticker: string | null;
 }
