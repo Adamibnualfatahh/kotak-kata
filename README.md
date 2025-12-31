@@ -1,20 +1,38 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# KotakKata 🟦
 
-# Run and deploy your AI Studio app
+**Generator Meme Teks Viral Otomatis**
 
-This contains everything you need to run your app locally.
+KotakKata adalah aplikasi web sederhana namun *powerful* yang dirancang untuk mengubah teks biasa menjadi gambar tipografi persegi (1:1) yang estetik, mirip dengan gaya postingan teks viral di platform seperti X (Twitter) dan Instagram.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1I2cyeLB-Px-Zo4IhgHXI2yeyHg4-IbNX
+Aplikasi ini menggunakan algoritma *typesetting* khusus untuk memastikan teks Anda mengisi ruang kotak secara "canggung tapi natural" (awkwardly natural), menciptakan nuansa meme yang autentik.
 
-## Run Locally
+## Fitur Utama ✨
 
-**Prerequisites:**  Node.js
+*   **Tata Letak Otomatis (Auto-Fit)**: Teks secara otomatis dibesarkan atau dikecilkan untuk mengisi penuh kanvas persegi 1:1 dengan perataan kanan-kiri (*justified*).
+*   **Kustomisasi Tampilan**:
+    *   **Ganti Font**: Pilihan font beragam mulai dari Arial Klasik, Inter, Serif, hingga Mono.
+    *   **Warna**: Bebas atur warna teks dan warna latar belakang.
+    *   **Background Image**: Gunakan gambar/foto Anda sendiri sebagai latar belakang teks.
+*   **Pratinjau Langsung**: Lihat hasil perubahan secara *real-time* saat Anda mengetik.
+*   **Ekspor Instan**:
+    *   Unduh hasil sebagai file PNG resolusi tinggi.
+    *   Salin gambar langsung ke Clipboard (*Copy Image*) untuk ditempel di media sosial.
+*   **Privasi Terjamin**: Semua pemrosesan gambar dilakukan secara lokal di browser Anda (*Client-side*). Tidak ada data teks atau gambar yang dikirim ke server.
 
+## Teknologi 🛠️
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Aplikasi ini dibangun menggunakan teknologi web modern:
+*   [React](https://react.dev/)
+*   [TypeScript](https://www.typescriptlang.org/)
+*   [Tailwind CSS](https://tailwindcss.com/) untuk styling UI.
+*   **HTML5 Canvas API** untuk rendering teks dan gambar berkinerja tinggi.
+
+## Cara Menggunakan
+
+1.  Ketik kalimat atau paragraf di kolom input sebelah kiri.
+2.  Lihat hasil yang muncul secara otomatis di sebelah kanan.
+3.  Klik tombol **Floating Action Button** (ikon bulat di pojok kanan bawah) untuk membuka pengaturan (ganti font, warna, atau background).
+4.  Klik **Unduh PNG** untuk menyimpan atau **Salin Gambar** untuk membagikan langsung.
+
+---
+Dibuat dengan ❤️ untuk kebutuhan meme Anda.
