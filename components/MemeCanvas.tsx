@@ -59,11 +59,13 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
           const blob = await getBlob();
           if (!blob) return;
 
+          const shareText = "dibikin pakai KotakKata https://kotak-kata.vercel.app/";
           const file = new File([blob], "kotakkata.png", { type: "image/png" });
+          
           const shareData: ShareData = {
             files: [file],
             title: 'KotakKata',
-            text: 'dibikin pakai KotakKata',
+            text: shareText,
           };
 
           // Prioritize Web Share API (Mobile)
@@ -76,7 +78,7 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
             ]);
             
             let url = '';
-            const caption = encodeURIComponent("dibikin pakai KotakKata");
+            const caption = encodeURIComponent(shareText);
             
             if (platform === 'twitter') {
                 url = `https://twitter.com/intent/tweet?text=${caption}`;
