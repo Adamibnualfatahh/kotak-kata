@@ -17,11 +17,20 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
     randomSeed = 0,
     isSeriousMode = false,
     sticker = null,
-    blurLevel = 0
+    blurLevel = 0,
+    aspectRatio = 'square',
+    onQualityAlert
   }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
-    // Expose download and copy methods to parent
+    // --- Helper Functions ---
+
+    const getBlob = async (): Promise<Blob | null> => {
+      const canvas = canvasRef.current;
+      if (!canvas) return null;
+      return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+    };
+
     useImperativeHandle(ref, () => ({
       downloadImage: () => {
         const canvas = canvasRef.current;
@@ -35,9 +44,7 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
         const canvas = canvasRef.current;
         if (!canvas) return;
         try {
-          const blob = await new Promise<Blob | null>((resolve) => 
-            canvas.toBlob(resolve, 'image/png')
-          );
+          const blob = await getBlob();
           if (!blob) throw new Error("Gagal membuat blob gambar");
           await navigator.clipboard.write([
             new ClipboardItem({ 'image/png': blob })
@@ -45,6 +52,45 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
         } catch (error) {
           console.error("Gagal menyalin ke clipboard", error);
           throw error;
+        }
+      },
+      shareImage: async (platform) => {
+        try {
+          const blob = await getBlob();
+          if (!blob) return;
+
+          const file = new File([blob], "kotakkata.png", { type: "image/png" });
+          const shareData: ShareData = {
+            files: [file],
+            title: 'KotakKata',
+            text: 'dibikin pakai KotakKata',
+          };
+
+          // Prioritize Web Share API (Mobile)
+          if (navigator.canShare && navigator.canShare(shareData)) {
+            await navigator.share(shareData);
+          } else {
+            // Fallback for Desktop: Copy + Open Intent
+            await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+            ]);
+            
+            let url = '';
+            const caption = encodeURIComponent("dibikin pakai KotakKata");
+            
+            if (platform === 'twitter') {
+                url = `https://twitter.com/intent/tweet?text=${caption}`;
+            } else if (platform === 'whatsapp') {
+                url = `https://wa.me/?text=${caption}`;
+            }
+            
+            if (url) {
+                alert("Gambar telah disalin ke clipboard! Silakan paste saat membagikan.");
+                window.open(url, '_blank');
+            }
+          }
+        } catch (err) {
+          console.error("Error sharing:", err);
         }
       }
     }));
@@ -54,14 +100,11 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
       const lines: string[][] = [];
       let currentLine: string[] = [];
       
-      // Simple pseudo-random using seed
       const random = (offset: number) => {
         const x = Math.sin(seed + offset) * 10000;
         return x - Math.floor(x);
       };
 
-      // Calculate max words per line based on level (Level 5 = fewer words = more chaotic)
-      // Level 1: 4-6 words, Level 5: 1-2 words
       const minWords = Math.max(1, 6 - level); 
       const maxWords = Math.max(2, 8 - level);
 
@@ -76,7 +119,6 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
           lines.push(currentLine);
           currentLine = [];
           wordCounter = 0;
-          // New target for next line
           wordCountTarget = Math.floor(random(index) * (maxWords - minWords + 1)) + minWords;
         }
       });
@@ -85,6 +127,7 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
       return lines;
     };
 
+    // --- RENDER EFFECT ---
     useEffect(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -101,9 +144,11 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
         // 1. Setup Canvas Dimensions
         const scale = 2; // Retina scaling
         const effectiveWidth = width * scale;
-        const effectiveHeight = effectiveWidth; // Square
-        
-        // Adjust padding based on weirdness
+        // Aspect Ratio Logic
+        const effectiveHeight = aspectRatio === 'story' 
+            ? (effectiveWidth * 16) / 9 
+            : effectiveWidth; // Square default
+
         const activePadding = isWeirdMode 
           ? Math.max(10, padding - (weirdnessLevel * 2)) 
           : padding;
@@ -117,6 +162,11 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
 
         // 2. Draw Background
         if (bgImgElement && !isSeriousMode) {
+          // Fill background color first (fallback)
+          ctx.fillStyle = backgroundColor;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // Cover logic
           const ratio = Math.max(effectiveWidth / bgImgElement.width, effectiveHeight / bgImgElement.height);
           const centerShift_x = (effectiveWidth - bgImgElement.width * ratio) / 2;
           const centerShift_y = (effectiveHeight - bgImgElement.height * ratio) / 2;
@@ -131,13 +181,18 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
           ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
-        // Handle empty text
+        // Anti Jelek Guard: Length Check
+        if (text.length > 250 && onQualityAlert) {
+             onQualityAlert("Biar lebih enak dilihat, coba dipendekin dikit 🙂");
+        } else if (onQualityAlert) {
+             onQualityAlert(null); // Clear alert
+        }
+
         if (text.trim() === '') return;
 
         // 3. Font Setup
         const activeFontFamily = isSeriousMode ? 'Merriweather' : fontFamily;
         const activeTextColor = isSeriousMode ? '#1a1a1a' : textColor;
-        // Use provided fontWeight unless Serious mode is on (default logic)
         const activeFontWeight = isSeriousMode ? 'normal' : fontWeight; 
 
         // 4. Wrapping & Sizing Logic
@@ -150,7 +205,7 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
         const words = text.split(/\s+/);
 
         if (isWeirdMode) {
-          // --- WEIRD MODE LOGIC ---
+          // --- WEIRD MODE LOGIC (Chaotic) ---
           const forcedLines = generateWeirdLines(words, weirdnessLevel, randomSeed);
           
           while (currentFontSize >= minFontSize) {
@@ -167,7 +222,6 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
             }
 
             const totalHeight = forcedLines.length * lineHeight;
-            
             if (fitsWidth && totalHeight <= maxHeight) {
               finalLines = forcedLines;
               finalLineHeight = lineHeight;
@@ -182,11 +236,12 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
            }
 
         } else {
-          // --- NORMAL AUTO-FIT LOGIC ---
+          // --- NORMAL AUTO-FIT + ANTI JELEK SMART WRAPPING ---
           while (currentFontSize >= minFontSize) {
             ctx.font = `${activeFontWeight} ${currentFontSize}px ${activeFontFamily}, sans-serif`;
             const lineHeight = currentFontSize * (isSeriousMode ? 1.6 : 1.25);
             
+            // Temporary variable for lines in this iteration
             const lines: string[][] = [];
             let currentLine: string[] = [];
             let currentLineWidth = 0;
@@ -196,10 +251,12 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
             for (const word of words) {
                const wordWidth = ctx.measureText(word).width;
                if (wordWidth > maxWidth) { fitsHorizontally = false; break; }
-               const testWidth = currentLineWidth + wordWidth + (currentLine.length > 0 ? spaceWidth : 0);
-               if (testWidth <= maxWidth) {
+               
+               const potentialWidth = currentLineWidth + wordWidth + (currentLine.length > 0 ? spaceWidth : 0);
+               
+               if (potentialWidth <= maxWidth) {
                   currentLine.push(word);
-                  currentLineWidth += wordWidth + (currentLine.length > 0 ? spaceWidth : 0);
+                  currentLineWidth = potentialWidth;
                } else {
                   if (currentLine.length > 0) lines.push(currentLine);
                   currentLine = [word];
@@ -207,6 +264,24 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
                }
             }
             if (currentLine.length > 0) lines.push(currentLine);
+
+            // ANTI JELEK GUARD: ORPHAN PREVENTION
+            // If the last line is a single word and previous line has multiple words,
+            // try to move one word down to balance it, IF it doesn't break height constraints.
+            if (lines.length > 1) {
+                const lastLine = lines[lines.length - 1];
+                const prevLine = lines[lines.length - 2];
+                
+                if (lastLine.length === 1 && prevLine.length > 2) {
+                    const wordToMove = prevLine.pop();
+                    if (wordToMove) {
+                        lastLine.unshift(wordToMove);
+                        // Re-calculate width of prevLine is technically needed for justification logic later,
+                        // but for sizing check, we just need to know it fits (it became shorter, so it fits).
+                    }
+                }
+            }
+
             const totalHeight = lines.length * lineHeight;
             if (fitsHorizontally && totalHeight <= maxHeight) {
                finalLines = lines;
@@ -215,6 +290,8 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
             }
             currentFontSize -= 2;
           }
+          
+          // Fallback if smallest font still doesn't fit (just force wrap)
           if (finalLines.length === 0) {
              currentFontSize = minFontSize;
              finalLineHeight = currentFontSize * 1.25;
@@ -237,14 +314,10 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
         }
 
         // 5. Render Text
-        
-        // BLUR FIX FOR IPHONE/SAFARI:
-        // Use shadowBlur instead of filter for text, as it's universally supported
-        // and doesn't suffer from context compositing issues on mobile.
         if (blurLevel > 0) {
-          ctx.filter = `blur(${blurLevel}px)`; // Attempt modern way first
-          ctx.shadowBlur = blurLevel * 2; // Fallback/Enhancement: Use shadow blur
-          ctx.shadowColor = activeTextColor; // Shadow same color as text makes it look blurry
+          ctx.filter = `blur(${blurLevel}px)`;
+          ctx.shadowBlur = blurLevel * 2;
+          ctx.shadowColor = activeTextColor;
           ctx.shadowOffsetX = 0;
           ctx.shadowOffsetY = 0;
         } else {
@@ -253,13 +326,11 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
           ctx.shadowColor = 'transparent';
         }
 
-        // Serious mode override for shadows
         if (isSeriousMode) {
-           // If serious mode, use specific shadow style, override blur shadow
            ctx.shadowColor = "rgba(0,0,0,0.1)";
            ctx.shadowBlur = 10;
            ctx.shadowOffsetY = 5;
-           ctx.filter = 'none'; // No blur in serious mode
+           ctx.filter = 'none';
         }
 
         ctx.fillStyle = activeTextColor;
@@ -267,6 +338,7 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
         ctx.textBaseline = 'top';
         
         const totalTextHeight = finalLines.length * finalLineHeight;
+        // Vertically Center
         let yCursor = (effectiveHeight - totalTextHeight) / 2;
         
         if (isSeriousMode) yCursor -= 20;
@@ -275,6 +347,7 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
           const isLastLine = lineIndex === finalLines.length - 1;
           const isSingleWord = lineWords.length === 1;
           
+          // In Weird Mode, random justification. In Normal, justify everything except last line/single words.
           let forceJustify = isWeirdMode && !isSingleWord;
           let standardLeft = (isLastLine || isSingleWord) && !forceJustify;
 
@@ -299,12 +372,12 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
           yCursor += finalLineHeight;
         });
 
-        // Reset filter/shadow so stickers/footer are sharp
+        // Reset filter/shadow
         ctx.filter = 'none';
         ctx.shadowBlur = 0;
         ctx.shadowColor = 'transparent';
 
-        // 6. Serious Mode Caption
+        // 6. Footer / Sticker
         if (isSeriousMode) {
           ctx.fillStyle = "#666666";
           ctx.font = `italic normal ${12 * scale}px Merriweather, serif`;
@@ -313,7 +386,6 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
           ctx.fillText("Dibuat dengan penuh pertimbangan moral.", effectiveWidth / 2, effectiveHeight - (effectivePadding / 2));
         }
 
-        // 7. Sticker
         if (sticker) {
           ctx.font = `normal ${40 * scale}px Arial`; 
           ctx.textAlign = "right";
@@ -334,13 +406,18 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
         renderCanvas();
       }
 
-    }, [text, width, fontSize, padding, fontFamily, fontWeight, backgroundColor, textColor, backgroundImage, isWeirdMode, weirdnessLevel, randomSeed, isSeriousMode, sticker, blurLevel]);
+    }, [text, width, fontSize, padding, fontFamily, fontWeight, backgroundColor, textColor, backgroundImage, isWeirdMode, weirdnessLevel, randomSeed, isSeriousMode, sticker, blurLevel, aspectRatio, onQualityAlert]);
+
+    // Determine wrapper height based on aspect ratio
+    const wrapperHeightClass = aspectRatio === 'story' ? 'aspect-[9/16]' : 'aspect-square';
 
     return (
       <div className={`shadow-2xl border-4 ${isSeriousMode ? 'border-gray-800' : 'border-gray-100'} rounded-sm overflow-hidden bg-white transition-all duration-500`}>
         <canvas
           ref={canvasRef}
-          style={{ width: `${width}px`, height: `${width}px`, display: 'block' }}
+          // We rely on CSS aspectRatio for the container, but here we set explicit pixel sizes for high DPI
+          // The CSS handles the responsiveness.
+          style={{ width: '100%', height: 'auto', display: 'block' }}
           className="mx-auto"
         />
       </div>

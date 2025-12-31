@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import MemeCanvas from './components/MemeCanvas';
 import { Controls } from './components/Controls';
 import { SettingsModal } from './components/SettingsModal';
-import { CanvasRefHandle, AppSettings } from './types';
+import { CanvasRefHandle, AppSettings, AspectRatio } from './types';
 
 const TEMPLATES = [
   { label: "Pilih Template Viral...", value: "" },
@@ -42,6 +42,10 @@ const App: React.FC = () => {
   const [randomSeed, setRandomSeed] = useState(0);
   const [isSeriousMode, setIsSeriousMode] = useState(false);
   const [blurLevel, setBlurLevel] = useState(0);
+
+  // V3 States
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>('square');
+  const [qualityAlert, setQualityAlert] = useState<string | null>(null);
 
   const canvasRef = useRef<CanvasRefHandle>(null);
 
@@ -139,6 +143,13 @@ const App: React.FC = () => {
                 value={text}
                 onChange={(e) => setText(e.target.value)}
               />
+              {/* Anti Jelek Guard Notification */}
+              {qualityAlert && (
+                <div className="mt-3 bg-yellow-50 text-yellow-800 text-xs px-3 py-2 rounded-lg flex items-center gap-2 animate-pulse">
+                  <span className="text-lg">💡</span>
+                  {qualityAlert}
+                </div>
+              )}
             </div>
 
             {/* Features Row */}
@@ -212,6 +223,9 @@ const App: React.FC = () => {
                <Controls 
                   onDownload={() => canvasRef.current?.downloadImage()}
                   onCopy={() => canvasRef.current?.copyImageToClipboard() || Promise.resolve()}
+                  onShare={(platform) => canvasRef.current?.shareImage(platform) || Promise.resolve()}
+                  aspectRatio={aspectRatio}
+                  setAspectRatio={setAspectRatio}
                />
             </div>
           </section>
@@ -230,12 +244,12 @@ const App: React.FC = () => {
                  </span>
              </div>
              
-             {/* The Meme Canvas */}
-             <div className="transform transition-transform hover:scale-[1.02] duration-300">
+             {/* The Meme Canvas Wrapper */}
+             <div className={`transform transition-all duration-500 hover:scale-[1.01] ${aspectRatio === 'story' ? 'w-[240px] md:w-[280px]' : 'w-[240px] md:w-[320px]'}`}>
                 <MemeCanvas 
                   ref={canvasRef}
                   text={text} 
-                  width={240}
+                  width={240} // Base width, real rendering uses internal scale
                   fontSize={42}
                   padding={24}
                   fontFamily={settings.fontFamily}
@@ -249,6 +263,8 @@ const App: React.FC = () => {
                   isSeriousMode={isSeriousMode}
                   sticker={settings.sticker}
                   blurLevel={blurLevel}
+                  aspectRatio={aspectRatio}
+                  onQualityAlert={setQualityAlert}
                 />
              </div>
 
@@ -257,6 +273,9 @@ const App: React.FC = () => {
                 <Controls 
                   onDownload={() => canvasRef.current?.downloadImage()}
                   onCopy={() => canvasRef.current?.copyImageToClipboard() || Promise.resolve()}
+                  onShare={(platform) => canvasRef.current?.shareImage(platform) || Promise.resolve()}
+                  aspectRatio={aspectRatio}
+                  setAspectRatio={setAspectRatio}
                />
              </div>
           </section>

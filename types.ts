@@ -1,7 +1,10 @@
 export interface CanvasRefHandle {
   downloadImage: () => void;
   copyImageToClipboard: () => Promise<void>;
+  shareImage: (platform: 'twitter' | 'whatsapp' | 'native') => Promise<void>;
 }
+
+export type AspectRatio = 'square' | 'story';
 
 export interface MemeCanvasProps {
   text: string;
@@ -22,6 +25,10 @@ export interface MemeCanvasProps {
   isSeriousMode?: boolean;
   sticker?: string | null;
   blurLevel?: number; // New blur feature
+  
+  // V3 Features
+  aspectRatio?: AspectRatio;
+  onQualityAlert?: (message: string | null) => void;
 }
 
 export interface AppSettings {
