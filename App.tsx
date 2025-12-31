@@ -6,20 +6,30 @@ import { CanvasRefHandle, AppSettings } from './types';
 
 const TEMPLATES = [
   { label: "Pilih Template Viral...", value: "" },
-  { label: "Ikan Hiu", value: "ikan hiu ikan kakap, hei you can i get your pap?" },
+  { label: "Ikan Hiu (Classic)", value: "ikan hiu ikan kakap, hei you can i get your pap?" },
+  { label: "Pinjam Seratus", value: "agar silaturahmi tidak terputus, bolehkah saya pinjam seratus?" },
   { label: "Info Loker", value: "info loker yang kerjanya cuman nafas doang tapi gaji 2 digit?" },
   { label: "Sekadar Mengingatkan", value: "sekadar mengingatkan 🙏, jangan lupa untuk tidak lupa." },
   { label: "Maaf Lancang", value: "maaf lancang 🙏, apakah boleh saya menyukaimu secara ugal-ugalan?" },
   { label: "Mental Aman", value: "mental aman? dompet aman? hati aman? tidak ada yang aman." },
+  { label: "Aura Maghrib", value: "aura maghrib, tapi maghrib di mekkah. menyala abangkuh 🔥" },
+  { label: "Menyala Abangkuh", value: "ilmu padi abangkuh 🌾, tetap menyala walau redup." },
+  { label: "Gwenchana", value: "gwenchana... gwenchana... teng neng neng neng neng (sakit banget anj*r)." },
+  { label: "Minimal Mandi", value: "minimal mandi dulu lah, baru ngomongin orang." },
+  { label: "Agak Laen", value: "agak laen emang kau ini, disuruh ke kanan malah ke masa lalu." },
+  { label: "Info Mazzeh", value: "info mazzeh, acara hari ini dibatalkan karena admin mau tidur." },
+  { label: "Mending Rakit PC", value: "daripada beli motor mending rakit pc, bisa buat render masa depan." },
+  { label: "Tobrut", value: "tobrut: tokoh buruh rakyat tertindas ✊" },
 ];
 
-const FONTS = ['Inter', 'Poppins', 'Times New Roman', 'Comic Neue', 'Arial'];
+const FONTS = ['Inter', 'Poppins', 'Times New Roman', 'Comic Neue', 'Arial', 'Oswald', 'Playfair Display', 'Permanent Marker'];
 
 const App: React.FC = () => {
   const [text, setText] = useState<string>("ikan hiu ikan kakap, hei you can i get your pap?");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settings, setSettings] = useState<AppSettings>({
     fontFamily: 'Arial',
+    fontWeight: 'normal',
     backgroundColor: '#ffffff',
     textColor: '#000000',
     backgroundImage: null,
@@ -229,6 +239,7 @@ const App: React.FC = () => {
                   fontSize={42}
                   padding={24}
                   fontFamily={settings.fontFamily}
+                  fontWeight={settings.fontWeight}
                   backgroundColor={settings.backgroundColor}
                   textColor={settings.textColor}
                   backgroundImage={settings.backgroundImage}

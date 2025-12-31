@@ -31,7 +31,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const stickers = ["🐸", "😐", "😭", "🗿", "🫵", "🔥", "🤡", "💅"];
+  const stickers = ["🐸", "😐", "😭", "🗿", "🫵", "🔥", "🤡", "💅", "💀", "🤓"];
+
+  const fontOptions = [
+    { name: 'Klasik', value: 'Arial' },
+    { name: 'Inter', value: 'Inter' },
+    { name: 'Serif', value: 'Merriweather' },
+    { name: 'Mono', value: 'Space Mono' },
+    { name: 'Comic', value: 'Comic Sans MS' },
+    { name: 'Poppins', value: 'Poppins' },
+    { name: 'Oswald', value: 'Oswald' },
+    { name: 'Playfair', value: 'Playfair Display' },
+    { name: 'Marker', value: 'Permanent Marker' },
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -91,23 +103,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
           <hr className="border-gray-100" />
 
           {/* Font Selection */}
-          <div className="space-y-3">
-            <label className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Jenis Font</label>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { name: 'Klasik', value: 'Arial' },
-                { name: 'Inter', value: 'Inter' },
-                { name: 'Serif', value: 'Merriweather' },
-                { name: 'Mono', value: 'Space Mono' },
-                { name: 'Comic', value: 'Comic Sans MS' },
-                { name: 'Impact', value: 'Impact' },
-                { name: 'Poppins', value: 'Poppins' },
-                { name: 'C. Neue', value: 'Comic Neue' },
-              ].map((font) => (
+          <div className="space-y-4">
+             {/* Font Weight Dropdown */}
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Gaya Font</label>
+              <select 
+                value={settings.fontWeight || 'normal'}
+                onChange={(e) => onUpdate({ fontWeight: e.target.value })}
+                className="bg-gray-50 border border-gray-200 rounded-lg text-sm px-3 py-1 outline-none focus:ring-2 focus:ring-black"
+              >
+                <option value="300">Tipis</option>
+                <option value="normal">Normal</option>
+                <option value="bold">Tebal</option>
+                <option value="900">Extra Tebal</option>
+              </select>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              {fontOptions.map((font) => (
                 <button
                   key={font.value}
                   onClick={() => onUpdate({ fontFamily: font.value })}
-                  className={`py-3 px-4 rounded-xl border text-sm transition-all ${
+                  className={`py-2 px-2 rounded-lg border text-xs transition-all truncate ${
                     settings.fontFamily === font.value 
                       ? 'border-black bg-black text-white ring-2 ring-black ring-offset-2' 
                       : 'border-gray-200 hover:border-gray-400 text-gray-700 bg-white'

@@ -10,6 +10,7 @@ export interface MemeCanvasProps {
   padding?: number;
   // Styling options
   fontFamily?: string;
+  fontWeight?: string; // New: Font weight (normal, bold, etc)
   backgroundColor?: string;
   textColor?: string;
   backgroundImage?: string | null; // Data URL or Object URL
@@ -25,6 +26,7 @@ export interface MemeCanvasProps {
 
 export interface AppSettings {
   fontFamily: string;
+  fontWeight: string;
   backgroundColor: string;
   textColor: string;
   backgroundImage: string | null;

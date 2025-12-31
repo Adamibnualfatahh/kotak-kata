@@ -8,6 +8,7 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
     fontSize = 42, 
     padding = 24,
     fontFamily = 'Arial',
+    fontWeight = 'normal',
     backgroundColor = '#ffffff',
     textColor = '#000000',
     backgroundImage = null,
@@ -92,22 +93,22 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
       if (!ctx) return;
 
       const renderCanvas = (bgImgElement?: HTMLImageElement) => {
-        // Reset filter before drawing background
+        // Reset effects
         ctx.filter = 'none';
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
 
         // 1. Setup Canvas Dimensions
         const scale = 2; // Retina scaling
         const effectiveWidth = width * scale;
         const effectiveHeight = effectiveWidth; // Square
         
-        // Adjust padding based on weirdness (Level 5 = tighter padding)
+        // Adjust padding based on weirdness
         const activePadding = isWeirdMode 
           ? Math.max(10, padding - (weirdnessLevel * 2)) 
           : padding;
         
         const effectivePadding = activePadding * scale;
-        // const effectiveBottomPadding = isSeriousMode ? effectivePadding * 2.5 : effectivePadding; // Unused var
-
         const maxWidth = effectiveWidth - (effectivePadding * 2);
         const maxHeight = effectiveHeight - (effectivePadding * 2) - (isSeriousMode ? 40 : 0);
 
@@ -116,7 +117,6 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
 
         // 2. Draw Background
         if (bgImgElement && !isSeriousMode) {
-          // Draw image with "cover" fit
           const ratio = Math.max(effectiveWidth / bgImgElement.width, effectiveHeight / bgImgElement.height);
           const centerShift_x = (effectiveWidth - bgImgElement.width * ratio) / 2;
           const centerShift_y = (effectiveHeight - bgImgElement.height * ratio) / 2;
@@ -137,8 +137,10 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
         // 3. Font Setup
         const activeFontFamily = isSeriousMode ? 'Merriweather' : fontFamily;
         const activeTextColor = isSeriousMode ? '#1a1a1a' : textColor;
+        // Use provided fontWeight unless Serious mode is on (default logic)
+        const activeFontWeight = isSeriousMode ? 'normal' : fontWeight; 
 
-        // 4. Wrapping & Sizing Logic (Calculate without blur first)
+        // 4. Wrapping & Sizing Logic
         const maxFontSize = fontSize * scale;
         const minFontSize = 14 * scale; 
         let currentFontSize = maxFontSize;
@@ -152,7 +154,7 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
           const forcedLines = generateWeirdLines(words, weirdnessLevel, randomSeed);
           
           while (currentFontSize >= minFontSize) {
-            ctx.font = `${currentFontSize}px ${activeFontFamily}, sans-serif`;
+            ctx.font = `${activeFontWeight} ${currentFontSize}px ${activeFontFamily}, sans-serif`;
             const lineHeight = currentFontSize * (isSeriousMode ? 1.6 : (1.1 + (0.05 * weirdnessLevel))); 
             
             let fitsWidth = true;
@@ -182,7 +184,7 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
         } else {
           // --- NORMAL AUTO-FIT LOGIC ---
           while (currentFontSize >= minFontSize) {
-            ctx.font = `${currentFontSize}px ${activeFontFamily}, sans-serif`;
+            ctx.font = `${activeFontWeight} ${currentFontSize}px ${activeFontFamily}, sans-serif`;
             const lineHeight = currentFontSize * (isSeriousMode ? 1.6 : 1.25);
             
             const lines: string[][] = [];
@@ -235,25 +237,35 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
         }
 
         // 5. Render Text
-        // Apply Blur Filter for text only
+        
+        // BLUR FIX FOR IPHONE/SAFARI:
+        // Use shadowBlur instead of filter for text, as it's universally supported
+        // and doesn't suffer from context compositing issues on mobile.
         if (blurLevel > 0) {
-          ctx.filter = `blur(${blurLevel}px)`;
+          ctx.filter = `blur(${blurLevel}px)`; // Attempt modern way first
+          ctx.shadowBlur = blurLevel * 2; // Fallback/Enhancement: Use shadow blur
+          ctx.shadowColor = activeTextColor; // Shadow same color as text makes it look blurry
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 0;
         } else {
           ctx.filter = 'none';
+          ctx.shadowBlur = 0;
+          ctx.shadowColor = 'transparent';
+        }
+
+        // Serious mode override for shadows
+        if (isSeriousMode) {
+           // If serious mode, use specific shadow style, override blur shadow
+           ctx.shadowColor = "rgba(0,0,0,0.1)";
+           ctx.shadowBlur = 10;
+           ctx.shadowOffsetY = 5;
+           ctx.filter = 'none'; // No blur in serious mode
         }
 
         ctx.fillStyle = activeTextColor;
-        ctx.font = `${currentFontSize}px ${activeFontFamily}, sans-serif`;
+        ctx.font = `${activeFontWeight} ${currentFontSize}px ${activeFontFamily}, sans-serif`;
         ctx.textBaseline = 'top';
         
-        if (isSeriousMode) {
-          ctx.shadowColor = "rgba(0,0,0,0.1)";
-          ctx.shadowBlur = 10;
-          ctx.shadowOffsetY = 5;
-        } else {
-          ctx.shadowColor = "transparent";
-        }
-
         const totalTextHeight = finalLines.length * finalLineHeight;
         let yCursor = (effectiveHeight - totalTextHeight) / 2;
         
@@ -287,22 +299,23 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
           yCursor += finalLineHeight;
         });
 
-        // Reset filter so stickers/footer are sharp (optional, but usually cleaner)
+        // Reset filter/shadow so stickers/footer are sharp
         ctx.filter = 'none';
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
 
         // 6. Serious Mode Caption
         if (isSeriousMode) {
           ctx.fillStyle = "#666666";
-          ctx.font = `italic ${12 * scale}px Merriweather, serif`;
+          ctx.font = `italic normal ${12 * scale}px Merriweather, serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "bottom";
-          ctx.shadowColor = "transparent";
           ctx.fillText("Dibuat dengan penuh pertimbangan moral.", effectiveWidth / 2, effectiveHeight - (effectivePadding / 2));
         }
 
         // 7. Sticker
         if (sticker) {
-          ctx.font = `${40 * scale}px Arial`; 
+          ctx.font = `normal ${40 * scale}px Arial`; 
           ctx.textAlign = "right";
           ctx.textBaseline = "bottom";
           ctx.shadowColor = "rgba(0,0,0,0.2)";
@@ -321,7 +334,7 @@ const MemeCanvas = forwardRef<CanvasRefHandle, MemeCanvasProps>(
         renderCanvas();
       }
 
-    }, [text, width, fontSize, padding, fontFamily, backgroundColor, textColor, backgroundImage, isWeirdMode, weirdnessLevel, randomSeed, isSeriousMode, sticker, blurLevel]);
+    }, [text, width, fontSize, padding, fontFamily, fontWeight, backgroundColor, textColor, backgroundImage, isWeirdMode, weirdnessLevel, randomSeed, isSeriousMode, sticker, blurLevel]);
 
     return (
       <div className={`shadow-2xl border-4 ${isSeriousMode ? 'border-gray-800' : 'border-gray-100'} rounded-sm overflow-hidden bg-white transition-all duration-500`}>
